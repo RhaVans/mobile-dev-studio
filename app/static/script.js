@@ -1,389 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Mobile Dev Studio</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/css/xterm.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@xterm/xterm@5.5.0/lib/xterm.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-fit@0.10.0/lib/addon-fit.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@xterm/addon-webgl@0.16.0/lib/addon-webgl.min.js"></script>
-    <style>
-        :root {
-            --bg-root: #0D1010;
-            --bg-surface: #151918;
-            --bg-elevated: #1B201E;
-            --bg-input: #151918;
-            --bg-terminal: #0A0C0B;
-            
-            --border-subtle: #2A302D;
-            --border-focus: #3A4540;
-            --border-terminal: #1E2421;
-            
-            --text-primary: #E7E1D5;
-            --text-secondary: #A7AAA1;
-            --text-muted: #70756F;
-            
-            --accent-copper: #B86F4C;
-            --accent-copper-dim: rgba(184, 111, 76, 0.12);
-            --accent-copper-border: rgba(184, 111, 76, 0.3);
-            
-            --accent-verdigris: #557C73;
-            --accent-verdigris-dim: rgba(85, 124, 115, 0.12);
-            
-            --accent-brass: #A58A5B;
-            --accent-brass-dim: rgba(165, 138, 91, 0.12);
-            
-            --accent-error: #B85C54;
-            --accent-error-dim: rgba(184, 92, 84, 0.12);
-            
-            --accent-success: #6F927B;
-            --accent-success-dim: rgba(111, 146, 123, 0.12);
-            
-            --accent-warning: #B18A58;
-            --accent-warning-dim: rgba(177, 138, 88, 0.12);
-            
-            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            --font-mono: 'Fira Code', monospace;
-            
-            --header-h: 36px;
-            --nav-h: 48px;
-            --radius-sharp: 2px;
-            --radius-control: 4px;
-            --radius-container: 6px;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: var(--font-ui); -webkit-tap-highlight-color: transparent; }
-        html, body { height: 100%; height: var(--viewport-height, 100dvh); background-color: var(--bg-root); color: var(--text-primary); overflow: hidden; font-size: 13px; overscroll-behavior: none; }
-        #app { display: flex; flex-direction: column; height: 100%; width: 100%; max-width: 900px; margin: 0 auto; position: relative; }
-
-        /* HEADER */
-        .top-bar { height: var(--header-h); background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; flex-shrink: 0; }
-        .brand-title { font-family: var(--font-mono); font-weight: 700; font-size: 0.82rem; color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 6px; }
-        .brand-title::before { content: ""; display: inline-block; width: 4px; height: 4px; background: var(--accent-copper); border-radius: 1px; }
-        .project-selector-btn { background: var(--bg-root); border: 1px solid var(--border-subtle); color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.75rem; padding: 4px 8px; border-radius: var(--radius-control); cursor: pointer; display: flex; align-items: center; gap: 6px; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 150ms, border-color 150ms; }
-        .project-selector-btn:hover, .project-selector-btn:active { color: var(--accent-copper); }
-
-        /* WORKSPACE */
-        .workspace-container { flex: 1; position: relative; overflow: hidden; background: var(--bg-root); }
-        .workspace-tab { position: absolute; inset: 0; display: none; flex-direction: column; overflow: hidden; }
-        .workspace-tab.active { display: flex; }
-
-        /* GLOBALS & INPUTS & BUTTONS */
-        .btn-sm { background: var(--bg-elevated); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.72rem; padding: 5px 8px; border-radius: var(--radius-control); cursor: pointer; white-space: nowrap; transition: background 150ms; }
-        .btn-sm:active, .btn-sm:hover { background: var(--border-subtle); }
-        .btn-send { background: var(--accent-copper); color: #0D1010; font-weight: 600; font-family: var(--font-mono); font-size: 0.8rem; border: none; padding: 0 16px; height: 42px; border-radius: var(--radius-control); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: opacity 150ms; }
-        .btn-send:active { opacity: 0.9; }
-        .btn-cancel { background: var(--bg-root); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.75rem; padding: 5px 12px; border-radius: var(--radius-control); cursor: pointer; transition: background 150ms; }
-        .btn-cancel:active { background: var(--border-subtle); }
-        .btn-approve { background: var(--accent-copper); color: #0D1010; font-weight: 700; border: none; padding: 5px 12px; border-radius: var(--radius-control); font-family: var(--font-mono); font-size: 0.75rem; cursor: pointer; transition: opacity 150ms; }
-        .btn-approve:active { opacity: 0.9; }
-
-        .search-input, .commit-input { background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.78rem; padding: 5px 8px; border-radius: var(--radius-control); outline: none; transition: border-color 150ms; }
-        .commit-input { font-size: 0.8rem; padding: 8px; }
-        .search-input:focus, .commit-input:focus { border-color: var(--border-focus); }
-
-        select { background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: var(--font-mono); font-size: 0.78rem; padding: 4px 8px; border-radius: var(--radius-control); outline: none; }
-
-        .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 8px; color: var(--text-muted); font-family: var(--font-mono); font-size: 0.78rem; padding: 20px; text-align: center; }
-
-        .status-badge { display: flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 0.7rem; font-weight: 400; color: var(--text-secondary); text-transform: uppercase; }
-        .status-badge::before { content: ""; display: block; width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); }
-        .status-badge.connected { color: var(--text-primary); }
-        .status-badge.connected::before { background: var(--accent-verdigris); }
-        .status-badge.working { color: var(--text-primary); }
-        .status-badge.working::before { background: var(--accent-copper); }
-        .status-badge.error { color: var(--text-primary); }
-        .status-badge.error::before { background: var(--accent-error); }
-
-        /* FILES WORKSPACE */
-        .files-header { padding: 6px 12px; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-        .file-tree-container { flex: 1; overflow-y: auto; padding: 6px 0; font-family: var(--font-mono); font-size: 0.78rem; background: var(--bg-root); }
-        .tree-node { display: flex; align-items: center; padding: 5px 12px; color: var(--text-secondary); cursor: pointer; user-select: none; transition: background 100ms, color 100ms; }
-        .tree-node:hover, .tree-node:active { background: var(--bg-surface); color: var(--text-primary); }
-        .tree-node.active-file { background: var(--accent-copper-dim); color: var(--accent-copper); border-left: 2px solid var(--accent-copper); padding-left: 10px; }
-        .node-icon { margin-right: 6px; font-size: 0.75rem; width: 14px; display: inline-flex; align-items: center; justify-content: center; color: inherit; }
-        .selected-file-footer { padding: 6px 12px; background: var(--bg-surface); border-top: 1px solid var(--border-subtle); font-family: var(--font-mono); font-size: 0.72rem; color: var(--text-muted); display: flex; justify-content: space-between; }
-        .selected-file-footer strong { color: var(--text-primary); font-weight: 500; }
-
-        /* AGENT WORKSPACE */
-        .agent-top-bar { padding: 6px 12px; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        .agent-input-container { padding: 8px 10px 12px; background: var(--bg-surface); border-top: 1px solid var(--border-subtle); display: flex; align-items: flex-end; gap: 8px; }
-        .agent-textarea { flex: 1; background: var(--bg-input); border: 1px solid var(--border-subtle); color: var(--text-primary); font-family: var(--font-ui); font-size: 0.85rem; padding: 10px; border-radius: var(--radius-control); resize: none; min-height: 42px; max-height: 100px; outline: none; line-height: 1.4; transition: border-color 150ms; }
-        .agent-textarea:focus { border-color: var(--border-focus); }
-
-        /* TERMINAL WORKSPACE */
-        .terminal-header { padding: 6px 12px; background: var(--bg-terminal); border-bottom: 1px solid var(--border-terminal); display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
-        .terminal-viewport { flex: 1; background: var(--bg-terminal); overflow: hidden; position: relative; }
-        .xterm .xterm-viewport { -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
-        .xterm .xterm-viewport::-webkit-scrollbar { width: 12px; display: block; background: var(--bg-terminal); }
-        .xterm .xterm-viewport::-webkit-scrollbar-thumb { background: #2A302D; border-radius: 6px; border: 2px solid var(--bg-terminal); }
-        .terminal-prompt-line { display: flex; align-items: center; padding: 8px 12px; background: var(--bg-terminal); border-top: 1px solid var(--border-terminal); font-family: var(--font-mono); gap: 8px; }
-        .terminal-prompt-symbol { color: var(--accent-copper); font-weight: 700; font-size: 0.8rem; }
-        .terminal-input { flex: 1; background: transparent; border: none; color: var(--text-primary); font-family: var(--font-mono); font-size: 0.8rem; outline: none; }
-
-        /* GIT WORKSPACE */
-        .git-header { padding: 6px 12px; background: var(--bg-surface); border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 0.78rem; gap: 6px; flex-wrap: wrap; color: var(--text-secondary); }
-        .branch-tag { color: var(--accent-brass); background: var(--accent-brass-dim); padding: 2px 6px; border-radius: var(--radius-control); font-size: 0.72rem; }
-        .git-changes-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 2px; font-family: var(--font-mono); font-size: 0.78rem; background: var(--bg-root); }
-        .git-change-row { display: flex; align-items: center; padding: 6px 8px; background: transparent; border-bottom: 1px solid var(--border-subtle); border-radius: 0; gap: 8px; cursor: pointer; transition: background 100ms; }
-        .git-change-row:active, .git-change-row:hover { background: var(--bg-surface); }
-        .git-change-row.selected { border-bottom-color: var(--accent-copper); background: var(--accent-copper-dim); }
-        .git-status { font-weight: 700; width: 14px; }
-        .git-status.M { color: var(--accent-brass); }
-        .git-status.A { color: var(--accent-verdigris); }
-        .git-status.D { color: var(--accent-error); }
-        .git-status.R { color: var(--accent-copper); }
-        .git-status.U { color: var(--accent-error); }
-        .git-commit-box { padding: 10px; background: var(--bg-surface); border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: 8px; }
-        .git-action-bar { display: flex; gap: 6px; flex-wrap: wrap; }
-        .git-section-label { color: var(--text-muted); font-size: 0.65rem; margin-bottom: 4px; margin-top: 8px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.06em; }
-        .git-section-label:first-child { margin-top: 0; }
-        .diff-container { background: var(--bg-terminal); border: 1px solid var(--border-subtle); border-radius: var(--radius-sharp); padding: 8px; font-family: var(--font-mono); font-size: 0.75rem; line-height: 1.5; overflow: auto; max-height: 300px; white-space: pre-wrap; word-break: break-all; }
-        .diff-add { color: var(--accent-verdigris); }
-        .diff-del { color: var(--accent-error); }
-        .diff-hunk { color: var(--accent-copper); }
-        .diff-ctx { color: var(--text-muted); }
-        .commit-item { padding: 6px 8px; background: transparent; border-bottom: 1px solid var(--border-subtle); border-radius: 0; cursor: pointer; display: flex; flex-direction: column; gap: 2px; transition: background 100ms; }
-        .commit-item:active, .commit-item:hover { background: var(--bg-surface); }
-        .commit-hash { color: var(--accent-copper); font-size: 0.7rem; }
-        .commit-msg { color: var(--text-primary); font-size: 0.78rem; }
-        .commit-meta { color: var(--text-muted); font-size: 0.68rem; }
-
-        /* BOTTOM NAV */
-        .bottom-nav { height: var(--nav-h); background: var(--bg-surface); border-top: 1px solid var(--border-subtle); display: flex; padding-bottom: env(safe-area-inset-bottom, 0px); flex-shrink: 0; }
-        .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: transparent; border: none; color: var(--text-muted); font-family: var(--font-mono); font-size: 0.7rem; font-weight: 600; cursor: pointer; border-top: 2px solid transparent; transition: background 150ms, color 150ms; }
-        .nav-item.active { color: var(--text-primary); border-top-color: var(--accent-copper); background: rgba(184, 111, 76, 0.04); }
-        .nav-icon { display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; }
-
-        /* MODALS */
-        .modal-overlay { position: absolute; inset: 0; background: rgba(13, 16, 16, 0.85); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
-        .modal-overlay.active { display: flex; }
-        .modal-card { width: 100%; max-width: 420px; background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-container); padding: 14px; display: flex; flex-direction: column; gap: 12px; max-height: 80vh; overflow-y: auto; }
-        .modal-header { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; color: var(--text-primary); display: flex; justify-content: space-between; align-items: center; }
-        .project-list { display: flex; flex-direction: column; gap: 4px; font-family: var(--font-mono); font-size: 0.8rem; }
-        .project-item { padding: 8px 10px; background: var(--bg-input); border: 1px solid var(--border-subtle); border-radius: var(--radius-control); color: var(--text-primary); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .project-item.current { border-color: var(--accent-copper); color: var(--accent-copper); }
-    </style>
-</head>
-<body>
-    <div id="app">
-        <header class="top-bar">
-            <div class="brand-title">MOBILE DEV STUDIO</div>
-            <button class="project-selector-btn" id="projectSwitchTrigger">
-                <span id="currentProjectName">mobile-dev-studio</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-            </button>
-        </header>
-
-        <main class="workspace-container">
-
-            <!-- 1. FILES WORKSPACE -->
-            <section class="workspace-tab active" id="tab-files">
-                <div class="files-header">
-                    <input type="text" class="search-input" id="fileSearchInput" placeholder="Filter files...">
-                    <button class="btn-sm" id="btnNewFile">+ File</button>
-                    <button class="btn-sm" id="btnNewFolder">+ Folder</button>
-                    <button class="btn-sm" id="btnRenameItem">Rename</button>
-                    <button class="btn-sm" id="btnDeleteItem" style="color: var(--red);">Delete</button>
-                    <button class="btn-sm" id="btnRefreshFiles"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-                </div>
-                <div style="display: flex; flex: 1; overflow: hidden;">
-                    <div class="file-tree-container" id="fileTreeContainer" style="width: 40%; min-width: 160px; max-width: 280px; border-right: 1px solid var(--border-color);">
-                        <div style="padding: 12px; color: var(--text-muted);">Loading files...</div>
-                    </div>
-                    <div style="flex: 1; display: flex; flex-direction: column; background: #060708; overflow: hidden;">
-                        <div style="padding: 6px 12px; background: var(--bg-surface); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; font-family: var(--font-mono); font-size: 0.78rem;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <span id="editorFileName" style="font-weight: 600; color: var(--accent);">No file open</span>
-                                <span id="editorUnsavedDot" style="color: var(--amber); display: none;">•</span>
-                            </div>
-                            <div style="display: flex; gap: 6px;">
-                                <button class="btn-sm" id="btnSaveFile" style="background: var(--accent); color: #000; font-weight: 700; display: none;">Save</button>
-                            </div>
-                        </div>
-                        <div style="flex: 1; position: relative; overflow: hidden; display: flex;">
-                            <textarea id="codeEditorArea" style="width: 100%; height: 100%; background: #060708; color: #c9d1d9; font-family: 'Fira Code', monospace; font-size: 0.82rem; line-height: 1.45; border: none; padding: 10px; outline: none; resize: none; white-space: pre; overflow: auto; display: none;" spellcheck="false"></textarea>
-                            <div id="editorEmptyState" class="empty-state">Select a file to view or edit</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="selected-file-footer" id="selectedFileFooter">
-                    <span>Selected: <strong id="selectedFilePath">None</strong></span>
-                    <span id="selectedFileMeta">0 bytes</span>
-                </div>
-            </section>
-
-            <!-- 2. AGENT WORKSPACE -->
-            <section class="workspace-tab" id="tab-agent">
-                <div class="agent-top-bar">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <select class="agent-select" id="agentSelector">
-                            <option value="antigravity">Antigravity</option>
-                            <option value="opencode">OpenCode</option>
-                        </select>
-                        <select class="agent-select" id="permissionSelector" style="width: 80px;">
-                            <option value="safe">Safe</option>
-                            <option value="normal" selected>Normal</option>
-                            <option value="full">Full</option>
-                        </select>
-                        <span class="status-badge" id="agentStatusBadge">DISCONNECTED</span>
-                    </div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="btn-sm" id="btnAgentStart">Start</button>
-                        <button class="btn-sm" id="btnAgentReconnect">Reconnect</button>
-                        <button class="btn-sm" id="btnAgentStop" style="color: var(--red);">Stop</button>
-                    </div>
-                </div>
-                
-                <div style="display: flex; flex: 1; overflow: hidden; flex-direction: column;">
-                    <!-- Activity Panel -->
-                    <div id="agentActivityPanel" style="max-height: 80px; height: auto; min-height: 28px; background: var(--bg-surface-elevated); border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0;">
-                        <div style="padding: 4px 8px; font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between;">
-                            <span>AGENT ACTIVITY</span>
-                            <span id="permissionHint">Normal: Destructive actions require approval</span>
-                        </div>
-                        <div id="activityLog" style="overflow-y: auto; padding: 4px; font-family: var(--font-mono); font-size: 0.75rem; display: flex; flex-direction: column; gap: 2px;">
-                            <div class="empty-state" id="activityEmptyState" style="padding: 8px; color: var(--text-muted); font-size: 0.7rem;">No recent agent activity</div>
-                        </div>
-                    </div>
-                    
-                    <div style="position: relative; flex: 1; display: flex; overflow: hidden;">
-                        <div class="terminal-viewport" id="agentStream" style="flex: 1; width: 100%;"></div>
-                        <button id="agentScrollBottomBtn" style="display: none; position: absolute; bottom: 12px; right: 20px; z-index: 10; padding: 6px 12px; border-radius: 20px; background: var(--accent); color: #000; font-family: var(--font-sans); font-weight: 600; font-size: 0.8rem; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.5); cursor: pointer;">↓ New output</button>
-                    </div>
-                </div>
-                <div class="agent-input-container" style="flex-wrap: wrap; padding: 6px 8px 12px 8px;">
-                    <div style="display: flex; gap: 6px; width: 100%; margin-bottom: 8px; overflow-x: auto; padding-bottom: 4px; white-space: nowrap;">
-                        <button class="btn-cancel" id="btnAgentEsc" style="padding: 6px 12px; font-weight: bold;">ESC</button>
-                        <button class="btn-cancel" id="btnAgentCtrl" style="padding: 6px 12px; font-weight: bold;">CTRL</button>
-                        <button class="btn-cancel" id="btnAgentAlt" style="padding: 6px 12px; font-weight: bold;">ALT</button>
-                        <button class="btn-cancel" id="btnAgentEnter" style="padding: 6px 12px; font-weight: bold; background: var(--blue); color: #000; border-color: var(--blue);">ENTER</button>
-                        <button class="btn-cancel" id="btnAgentCtrlC" style="padding: 6px 12px; font-weight: bold; color: var(--red);">^C</button>
-                        <button class="btn-cancel" id="btnAgentUp" style="padding: 6px 14px; font-size: 1.1rem;">↑</button>
-                        <button class="btn-cancel" id="btnAgentDown" style="padding: 6px 14px; font-size: 1.1rem;">↓</button>
-                        <button class="btn-cancel" id="btnAgentLeft" style="padding: 6px 14px; font-size: 1.1rem;">←</button>
-                        <button class="btn-cancel" id="btnAgentRight" style="padding: 6px 14px; font-size: 1.1rem;">→</button>
-                        <button class="btn-cancel" id="btnAgentHome" style="padding: 6px 12px; font-weight: bold;">HOME</button>
-                        <button class="btn-cancel" id="btnAgentEnd" style="padding: 6px 12px; font-weight: bold;">END</button>
-                        <button class="btn-cancel" id="btnAgentPgUp" style="padding: 6px 12px; font-weight: bold;">PGUP</button>
-                        <button class="btn-cancel" id="btnAgentPgDn" style="padding: 6px 12px; font-weight: bold;">PGDN</button>
-                    </div>
-                    <div style="display: flex; gap: 6px; width: 100%; align-items: flex-end;">
-                        <button class="btn-cancel" id="btnSummonKeyboard" style="padding: 0 12px; height: 42px; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;" title="Summon Keyboard"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" ry="2"/><path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/><path d="M8 12h.01"/><path d="M12 12h.01"/><path d="M16 12h.01"/><path d="M7 16h10"/></svg></button>
-                        <textarea class="agent-textarea" id="agentInput" placeholder="Message agent..." style="font-size: 1rem; padding: 10px; min-height: 42px;"></textarea>
-                        <button class="btn-send" id="agentSendBtn" style="height: 42px; padding: 0 16px; font-size: 1rem;">Send</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 3. TERMINAL WORKSPACE -->
-            <section class="workspace-tab" id="tab-terminal">
-                <div class="terminal-header">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span>bash</span>
-                        <span class="status-badge" id="terminalStatusBadge">DISCONNECTED</span>
-                    </div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="btn-sm" id="btnTerminalClear" style="padding: 2px 6px;">Clear</button>
-                        <button class="btn-sm" id="btnCtrlC" style="padding: 2px 6px; color: var(--red);">^C</button>
-                        <button class="btn-sm" id="btnTerminalStop" style="padding: 2px 6px; color: var(--red);">Stop</button>
-                        <button class="btn-sm" id="btnTerminalReconnect" style="padding: 2px 6px;">Reconnect</button>
-                    </div>
-                </div>
-                <div class="terminal-viewport" id="terminalViewport"></div>
-                <div class="terminal-prompt-line">
-                    <span class="terminal-prompt-symbol">$</span>
-                    <input type="text" class="terminal-input" placeholder="Type command..." id="terminalInput">
-                </div>
-            </section>
-
-            <!-- 4. GIT WORKSPACE -->
-            <section class="workspace-tab" id="tab-git">
-                <div class="git-header">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <span>Repository</span>
-                        <span class="branch-tag" id="gitBranchTag">—</span>
-                    </div>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="btn-sm" id="btnGitRefresh"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg></button>
-                        <button class="btn-sm" id="btnGitBranches">Branches</button>
-                        <button class="btn-sm" id="btnGitHistory">History</button>
-                    </div>
-                </div>
-                <div class="git-changes-list" id="gitChangesList">
-                    <div class="empty-state" id="gitEmptyState">Loading Git status...</div>
-                </div>
-                <div class="git-commit-box">
-                    <input type="text" class="commit-input" id="gitCommitInput" placeholder="Commit message...">
-                    <div class="git-action-bar">
-                        <button class="btn-send" id="btnGitCommit" style="flex: 1; height: 32px;">Commit</button>
-                        <button class="btn-sm" id="btnGitStageAll">Stage All</button>
-                        <button class="btn-sm" id="btnGitPull">Pull</button>
-                        <button class="btn-sm" id="btnGitPush">Push</button>
-                    </div>
-                </div>
-            </section>
-
-        </main>
-
-        <nav class="bottom-nav">
-            <button class="nav-item active" data-tab="files"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span><span>FILES</span></button>
-            <button class="nav-item" data-tab="agent"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L11 4.5h3L11 22l2-2.5h-3L13 2Z"/></svg></span><span>AGENT</span></button>
-            <button class="nav-item" data-tab="terminal"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg></span><span>TERMINAL</span></button>
-            <button class="nav-item" data-tab="git"><span class="nav-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span><span>GIT</span></button>
-        </nav>
-
-        <!-- PROJECT SWITCHER MODAL -->
-        <div class="modal-overlay" id="projectModal">
-            <div class="modal-card">
-                <div class="modal-header">
-                    <span>SWITCH WORKSPACE</span>
-                    <button class="btn-sm" id="closeModalBtn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-                </div>
-                <div class="project-list" id="projectList"></div>
-                <div style="display: flex; gap: 8px; margin-top: 4px;">
-                    <button class="btn-sm" id="btnNewProject" style="flex: 1;">+ New Project</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- NOTIFICATION / ALERT MODAL -->
-        <div class="modal-overlay" id="infoModal">
-            <div class="modal-card">
-                <div class="modal-header">
-                    <span id="infoModalTitle">NOTICE</span>
-                    <button class="btn-sm" id="closeInfoModalBtn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
-                </div>
-                <div id="infoModalContent" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">
-                    Notification content...
-                </div>
-            </div>
-        </div>
-
-        <!-- AGENT APPROVAL MODAL -->
-        <div class="modal-overlay" id="approvalModal">
-            <div class="modal-card">
-                <div class="modal-header">
-                    <span id="approvalTitle" style="color: var(--amber);">COMMAND REQUIRES APPROVAL</span>
-                </div>
-                <div style="font-family: var(--font-mono); font-size: 0.78rem; display: flex; flex-direction: column; gap: 8px;">
-                    <div><span style="color: var(--text-muted);">Working directory:</span><br><span id="approvalCwd" style="color: var(--text-main);"></span></div>
-                    <div><span style="color: var(--text-muted);">Command:</span><br><div style="background: #060708; padding: 6px; border: 1px solid var(--border-color); border-radius: 3px; color: var(--text-main); margin-top: 4px;" id="approvalCommand"></div></div>
-                    <div><span style="color: var(--text-muted);">Risk:</span><br><span id="approvalRisk" style="color: var(--red);"></span></div>
-                </div>
-                <div style="display: flex; gap: 8px; margin-top: 8px;">
-                    <button class="btn-cancel" id="btnApproveReject" style="flex: 1; color: var(--red);">Reject</button>
-                    <button class="btn-approve" id="btnApproveOnce" style="flex: 1;">Approve Once</button>
-                    <button class="btn-approve" id="btnApproveSession" style="flex: 1; display: none;">Approve For Session</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
+<script>
         function escapeHtml(str) {
             return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
         }
@@ -469,7 +84,7 @@
                         const item = document.createElement('div');
                         item.className = `project-item ${p.name === currentProject ? 'current' : ''}`;
                         item.setAttribute('data-proj', p.name);
-                        item.innerHTML = `<span>${escapeHtml(p.name)}</span>${p.name === currentProject ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : ''}`;
+                        item.innerHTML = `<span>${escapeHtml(p.name)}</span>${p.name === currentProject ? '<span>✓</span>' : ''}`;
                         item.onclick = () => { checkUnsavedChanges(() => { currentProject = p.name; currentProjectName.textContent = p.name; fetchProjects(); fetchFileTree(); resetEditorState(); projectModal.classList.remove('active'); }); };
                         projectListEl.appendChild(item);
                     });
@@ -501,7 +116,7 @@
                 const node = document.createElement('div');
                 node.className = `tree-node ${item.is_dir ? 'folder' : 'file'} ${activeOpenFile === item.rel_path ? 'active-file' : ''}`;
                 node.setAttribute('data-path', item.rel_path);
-                node.innerHTML = `<span class="node-icon">${item.is_dir ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>' : '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>'}</span><span>${escapeHtml(item.name)}</span>`;
+                node.innerHTML = `<span class="node-icon">${item.is_dir ? '📁' : '📄'}</span><span>${escapeHtml(item.name)}</span>`;
                 node.onclick = () => {
                     document.querySelectorAll('.tree-node').forEach(n => n.classList.remove('active-file'));
                     node.classList.add('active-file');
@@ -562,7 +177,7 @@
         fetchProjects(); fetchFileTree();
 
         // --- XTERM.JS TERMINAL INTEGRATIONS ---
-        const termTheme = { background: '#0A0C0B', foreground: '#E7E1D5', cursor: '#B86F4C', selectionBackground: 'rgba(184, 111, 76, 0.3)', black: '#0D1010', red: '#B85C54', green: '#6F927B', yellow: '#B18A58', blue: '#557C73', magenta: '#A58A5B', cyan: '#70756F', white: '#E7E1D5' };
+        const termTheme = { background: '#060708', foreground: '#c9d1d9', cursor: '#c9d1d9', selectionBackground: 'rgba(56,189,248,0.25)', black: '#0b0c0e', red: '#ef4444', green: '#10b981', yellow: '#f59e0b', blue: '#38bdf8', magenta: '#a78bfa', cyan: '#22d3ee', white: '#e1e4e8' };
 
         let agentTerm, agentFitAddon, agentWs;
         let terminalTerm, terminalFitAddon, termWs;
@@ -570,15 +185,17 @@
         function updateAgentStatus(status, type) {
             const b = document.getElementById('agentStatusBadge');
             b.textContent = status;
-            b.className = 'status-badge ' + type;
-            b.removeAttribute('style');
+            if (type === 'connected') { b.className = 'status-badge'; b.style.color = 'var(--accent)'; b.style.borderColor = 'var(--accent-border)'; b.style.background = 'var(--accent-dim)'; }
+            else if (type === 'working') { b.className = 'status-badge working'; b.style.color = 'var(--blue)'; b.style.borderColor = 'rgba(56,189,248,0.3)'; b.style.background = 'var(--blue-dim)'; }
+            else { b.className = 'status-badge'; b.style.color = 'var(--red)'; b.style.borderColor = 'rgba(239,68,68,0.3)'; b.style.background = 'var(--red-dim)'; }
         }
 
         function updateTerminalStatus(status, type) {
             const b = document.getElementById('terminalStatusBadge');
             b.textContent = status;
-            b.className = 'status-badge ' + type;
-            b.removeAttribute('style');
+            if (type === 'connected') { b.className = 'status-badge'; b.style.color = 'var(--accent)'; b.style.borderColor = 'var(--accent-border)'; b.style.background = 'var(--accent-dim)'; }
+            else if (type === 'working') { b.className = 'status-badge working'; b.style.color = 'var(--blue)'; b.style.borderColor = 'rgba(56,189,248,0.3)'; b.style.background = 'var(--blue-dim)'; }
+            else { b.className = 'status-badge'; b.style.color = 'var(--red)'; b.style.borderColor = 'rgba(239,68,68,0.3)'; b.style.background = 'var(--red-dim)'; }
         }
 
         let agentIsScrolledUp = false;
@@ -1015,7 +632,7 @@
                 infoModalTitle.textContent = 'BRANCHES';
                 let html = '<div style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px;">';
                 branches.forEach(b => {
-                    html += `<div class="project-item ${b.current ? 'current' : ''}" data-branch="${escapeHtml(b.name)}"><span>${escapeHtml(b.name)}</span>${b.current ? '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : '<button class="btn-sm btn-switch-branch" data-bname="' + escapeHtml(b.name) + '" style="font-size: 0.65rem; padding: 2px 5px;">Switch</button>'}</div>`;
+                    html += `<div class="project-item ${b.current ? 'current' : ''}" data-branch="${escapeHtml(b.name)}"><span>${escapeHtml(b.name)}</span>${b.current ? '<span>✓</span>' : '<button class="btn-sm btn-switch-branch" data-bname="' + escapeHtml(b.name) + '" style="font-size: 0.65rem; padding: 2px 5px;">Switch</button>'}</div>`;
                 });
                 html += `</div><div style="display: flex; gap: 8px;"><input type="text" id="newBranchInput" class="search-input" style="flex: 1;" placeholder="New branch name"><button class="btn-approve" id="btnCreateBranch">Create</button></div>`;
                 infoModalContent.innerHTML = html;
@@ -1070,5 +687,3 @@
         async function fetchInfo() { try { const r = await fetch('/api/info'); if (r.ok) { const d = await r.json(); } } catch (e) {} }
         fetchInfo();
     </script>
-</body>
-</html>
